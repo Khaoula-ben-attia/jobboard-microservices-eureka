@@ -2,6 +2,7 @@ const express = require('express');
 const swaggerUi = require('swagger-ui-express');
 const openapiSpec = require('./config/swagger');
 const meetingRoutes = require('./routes/meeting.routes');
+const pkg = require('../package.json');
 
 const app = express();
 
@@ -10,6 +11,21 @@ app.use(express.json());
 // ---- Swagger documentation ----
 app.get('/v3/api-docs', (req, res) => res.json(openapiSpec));
 app.use('/swagger-ui', swaggerUi.serve, swaggerUi.setup(openapiSpec));
+
+// ---- Health & info endpoints (déclarés dans Eureka) ----
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'UP' });
+});
+
+app.get('/info', (req, res) => {
+  res.status(200).json({
+    app: {
+      name: pkg.name,
+      version: pkg.version,
+      description: pkg.description,
+    },
+  });
+});
 
 // ---- API routes ----
 app.use('/api/meetings', meetingRoutes);

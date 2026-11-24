@@ -3,6 +3,7 @@ const { Eureka } = require('eureka-js-client');
 
 // Port lu depuis la variable d'environnement PORT (8083 par défaut)
 const PORT = Number(process.env.PORT) || 8083;
+const BASE_URL = `http://localhost:${PORT}`;
 
 // Configuration du client Eureka
 const eurekaClient = new Eureka({
@@ -16,8 +17,9 @@ const eurekaClient = new Eureka({
       '@enabled': true,
     },
     vipAddress: 'meeting',
-    statusPageUrl: `http://localhost:${PORT}/swagger-ui`,
-    homePageUrl: `http://localhost:${PORT}/`,
+    homePageUrl: `${BASE_URL}/`,
+    statusPageUrl: `${BASE_URL}/info`,
+    healthCheckUrl: `${BASE_URL}/health`,
     dataCenterInfo: {
       '@class': 'com.netflix.appinfo.InstanceInfo$DefaultDataCenterInfo',
       name: 'MyOwn',
@@ -31,8 +33,9 @@ const eurekaClient = new Eureka({
 });
 
 app.listen(PORT, () => {
-  console.log(`meeting microservice running on http://localhost:${PORT}`);
-  console.log(`Swagger UI: http://localhost:${PORT}/swagger-ui`);
+  console.log(`meeting microservice running on ${BASE_URL}`);
+  console.log(`Swagger UI: ${BASE_URL}/swagger-ui`);
+  console.log(`Health: ${BASE_URL}/health  |  Info: ${BASE_URL}/info`);
 
   // Enregistrement dans Eureka au démarrage
   eurekaClient.start((error) => {
