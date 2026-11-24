@@ -1,0 +1,62 @@
+"""Notification microservice - entry point.
+
+Run:  python -m app.main
+  or: uvicorn app.main:app --reload --port 8084
+"""
+import os
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
+from py_eureka_client import eureka_client
+
+from app.routers import notification
+
+# Port lu depuis la variable d'environnement PORT (8084 par défaut)
+PORT = int(os.getenv("PORT", "8084"))
+EUREKA_SERVER = os.getenv("EUREKA_SERVER", "http://localhost:8761/eureka")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Démarrage : enregistrement dans Eureka
+    await eureka_client.init_async(
+        eureka_server=EUREKA_SERVER,
+        app_name="NOTIFICATION",
+        instance_host="localhost",
+        instance_ip="127.0.0.1",
+        instance_port=PORT,
+        instance_id=f"localhost:notification:{PORT}",
+        status_page_url=f"http://localhost:{PORT}/swagger-ui",
+    )
+    print(f"Registered in Eureka as NOTIFICATION (port {PORT})")
+    yield
+    # Arrêt : désinscription d'Eureka
+    await eureka_client.stop_async()
+    print("Eureka client stopped")
+
+
+app = FastAPI(
+    title="Notification Microservice API",
+    version="1.0.0",
+    description=(
+        "Notification microservice (Python / FastAPI, no database). "
+        "Only the hello endpoint is implemented; the notification logic is to be developed by students."
+    ),
+    contact={"name": "Badia Abouhdid"},
+    servers=[{"url": f"http://localhost:{PORT}", "description": "Local"}],
+    # Same URLs as the other microservices of the project
+    docs_url="/swagger-ui",       # Swagger UI
+    openapi_url="/v3/api-docs",   # OpenAPI JSON
+    redoc_url="/redoc",           # alternative documentation
+    lifespan=lifespan,            # Eureka registration on startup / shutdown
+)
+
+app.include_router(notification.router)
+
+# TODO (students): if you add other routers, include them here.
+
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run("app.main:app", host="0.0.0.0", port=PORT, reload=True)
